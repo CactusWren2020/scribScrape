@@ -32,13 +32,13 @@ async function main () {
 
     for (message of messageList) {
 
-        //get first message
+    // messageList.forEach(async (el) => {
+                //get the first message
         await page.click(".message-list tr");
 
         //wait for the message to load
         await page.waitForSelector(".circle-cross");
 
-        //get time and message text
         const msgTime = await page.$eval("time", el => el.getAttribute("dateTime"));
         const paragraphs = await page.evaluate(() => {
             let paraElements = document.querySelectorAll(".bubble p");
@@ -52,6 +52,7 @@ async function main () {
         await page.waitForSelector(".user p a")
         let authorLink = await page.$(".user p a")
         let authorName = await authorLink.evaluate(el => el.innerText.trim());
+        
         
         //append message to messages.txt
         const stream = fs.createWriteStream("messages.txt", { flags: 'a' });
@@ -71,6 +72,22 @@ async function main () {
         await frame.waitForSelector(".navigation-footer button");
         await frame.click(".navigation-footer button");
         }
+    // )
+    
+    //open first message
+    // await Promise.all([
+    //     page.click(".message-list tr"),
+    //     // page.waitForNavigation({ waitUntil: 'networkidle0' }),
+    // ]);
+
+    //click on page
+    // await page.click(".message-list tr");
+
+    //get author name
+    // await page.waitForSelector(".user p a")
+    // let authorLink = await page.$(".user p a")
+    // let authorName = await authorLink.evaluate(el => el.innerText.trim());
+    // console.log("authorName in friends?", friends.includes(authorName));
     
     // //get status as a bulletin
     // await page.waitForSelector(".header-bar .circle-cross")
@@ -87,6 +104,33 @@ async function main () {
     //     console.log("Message is not a bulletin: proceed to save logic");
     //     // console.log(authorName + " is a friend, save message.");
     //     const msgTime = await page.$eval("time", el => el.getAttribute("dateTime"));
+        
+    //     await page.waitForSelector(".bubble");
+    //     const paragraphs = await page.evaluate(() => {
+    //         let paraElements = document.querySelectorAll(".bubble p");
+    //         //array literal
+    //         const paraList = [...paraElements];
+    //         //gets the innerText of each element
+    //         return paraList.map((el, index) => el.innerText);
+    //     });
+    //     //append message to messages.txt
+    //     const stream = fs.createWriteStream("messages.txt", { flags: 'a' });
+    //     stream.write(authorName + "\n");
+    //     stream.write(msgTime + "\n");
+    //     paragraphs.forEach((item, index) => {
+    //         stream.write(item + "\n");
+    //     });
+    //     stream.end();
+    // }
+    // console.log("Delete message");
+    //     // click delete
+    // await page.click(".circle-cross"),
+    
+    //     // //get iframe
+    //     const elementHandle = await page.waitForSelector("iframe.fancybox-iframe");
+    //     const frame = await elementHandle.contentFrame();
+    //     await frame.waitForSelector(".navigation-footer button");
+    // await frame.click(".navigation-footer button");
     
     await browser.close()
     
