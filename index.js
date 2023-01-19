@@ -5,7 +5,10 @@ require('dotenv').config()
  
 
 async function main () {
-    const browser = await puppeteer.launch({ headless: false });
+    const browser = await puppeteer.launch({
+        headless: false
+    });
+
     const page = await browser.newPage();
     await page.setViewport({ width: 1200, height: 720 });
     await page.goto(process.env.DEV_LOGIN, { waitUntil: 'networkidle0' });
@@ -32,45 +35,47 @@ async function main () {
 
     for (message of messageList) {
 
-        //get first message
+    //get first message
+        await page.waitForSelector(".message-list tr");
         await page.click(".message-list tr");
 
-        //wait for the message to load
-        await page.waitForSelector(".circle-cross");
+    //wait for the message to load
+    await page.waitForSelector(".circle-cross");
 
-        //get time and message text
-        const msgTime = await page.$eval("time", el => el.getAttribute("dateTime"));
-        const paragraphs = await page.evaluate(() => {
-            let paraElements = document.querySelectorAll(".bubble p");
-            //array literal
-            const paraList = [...paraElements];
-            //gets the innerText of each element
-            return paraList.map((el, index) => el.innerText);
-        });
+    //get time and message text
+    const msgTime = await page.$eval("time", el => el.getAttribute("dateTime"));
+    const paragraphs = await page.evaluate(() => {
+        let paraElements = document.querySelectorAll(".bubble p");
+        //array literal
+        const paraList = [...paraElements];
+        //gets the innerText of each element
+        return paraList.map((el, index) => el.innerText);
+    });
 
-        //get author name
-        await page.waitForSelector(".user p a")
-        let authorLink = await page.$(".user p a")
-        let authorName = await authorLink.evaluate(el => el.innerText.trim());
+    //get author name
+    await page.waitForSelector(".user p a")
+    let authorLink = await page.$(".user p a")
+    let authorName = await authorLink.evaluate(el => el.innerText.trim());
         
-        //append message to messages.txt
-        const stream = fs.createWriteStream("messages.txt", { flags: 'a' });
-        stream.write(authorName + "\n");
-        stream.write(msgTime + "\n");
-        paragraphs.forEach((item, index) => {
-            stream.write(item + "\n");
-        });
-        stream.end();
+    //append message to messages.txt
+        console.log("Saving the message from " + authorName);
+    const stream = fs.createWriteStream("messages.txt", { flags: 'a' });
+    stream.write(authorName + "\n");
+    stream.write(msgTime + "\n");
+    paragraphs.forEach((item, index) => {
+        stream.write(item + "\n");
+    });
+    stream.end();
 
-        //delete the message
-        await page.click(".circle-cross");
-
-        //handle the iframe verification
-        const elementHandle = await page.waitForSelector("iframe");
-        const frame = await elementHandle.contentFrame();
-        await frame.waitForSelector(".navigation-footer button");
-        await frame.click(".navigation-footer button");
-        }
+    //delete the message
+    await page.click(".circle-cross");
+    
+        console.log("deleting")
+    const elementHandle = await page.waitForSelector("iframe.fancybox-iframe");
+    const frame = await elementHandle.contentFrame();
+    const button = await frame.waitForSelector(".navigation-footer button");
+    await button.evaluate(el => el.click())
+}
     
     // //get status as a bulletin
     // await page.waitForSelector(".header-bar .circle-cross")
