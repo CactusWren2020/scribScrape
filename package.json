@@ -3,11 +3,15 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
+  "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node index.js"
   },
   "author": "michael_cho",
   "license": "ISC",
+  "engines": {
+    "node": "^18.13.0"
+  },
   "dependencies": {
     "dotenv": "^16.0.3",
     "puppeteer": "^19.5.2"
