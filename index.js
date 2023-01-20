@@ -1,95 +1,71 @@
-const puppeteer = require('puppeteer');
-const fs = require('fs');
-require('dotenv').config()
+import puppeteer from "puppeteer";
+import dotenv from "dotenv";
 
-async function main () {
-    const browser = await puppeteer.launch({
-        headless: false
-    });
+import { visitLoginPage, visitMessagesPage, visitThreadPage } from "./pages.js";
+import { saveThreadMessages, removeThread } from "./helpers.js";
 
-    const page = await browser.newPage();
-    await page.setViewport({ width: 1200, height: 720 });
-    await page.goto(process.env.DEV_LOGIN, { waitUntil: 'networkidle0' });
-    //login
-    await page.type('input[name=email]', process.env.DEV_EMAIL);
-    await page.type('input[name=password]', process.env.DEV_PASS);
-    await Promise.all([
-        page.click("footer button"),
-        page.waitForNavigation({ waitUntil: 'networkidle0' }),
-    ]);
+dotenv.config();
 
-    //go to messages
-    await page.goto("https://www.scribophile.com/dashboard/messages/")
+async function main() {
+  // config
+  const baseUrl = process.env.BASE_URL;
+  const skipBulletins = process.env.DEV_DEL_BULLETINS === "true";
+  const email = process.env.DEV_EMAIL;
+  const pass = process.env.DEV_PASS;
 
-    //parameters
-    const friends = process.env.DEV_FRIENDS.split(', ');
+  if (!baseUrl) {
+    throw new Error('Please provide the Scribophile url in the "BASE_URL" env variable.');
+  }
 
-    //will delete and not save bulletins
-    const deleteBulletins = process.env.DEV_DEL_BULLETINS;
+  if (!email || !pass) {
+    throw new Error('Please provider the login credentials in the "DEV_PASS" and "DEV_EMAIL" env variables.');
+  }
 
-    //this will delete the first message in the inbox
-    const messageList = await page.$$(".message-list tr");
+  const browser = await puppeteer.launch({
+    headless: false,
+  });
+  const page = await browser.newPage();
 
-    for (message of messageList) {
-    
-        // while (0 < 1) { //the 'nuclear' option--will delete everything
-    //get first message
-        await page.waitForSelector(".message-list tr");
-        await page.click(".message-list tr");
+  const loginPage = await visitLoginPage(page, {
+    url: `${baseUrl}/dashboard/login`,
+  });
 
-        //wait for the message to load
-        await page.waitForSelector(".circle-cross");
+  await loginPage.login(process.env.DEV_EMAIL, process.env.DEV_PASS);
 
-        //get status as a bulletin
-        let deleteButton = await page.$(".header-bar .circle-cross");
-        let deleteButtonText = await deleteButton.evaluate(el => el.innerText.trim());
-        let isBulletin = deleteButtonText.includes("bulletin");
-        console.log("isBulletin", isBulletin)
+  const messagesPage = await visitMessagesPage(page, {
+    url: `${baseUrl}/dashboard/messages`,
+  });
 
-        //get author name
-        await page.waitForSelector(".user p a")
-        let authorLink = await page.$(".user p a")
-        let authorName = await authorLink.evaluate(el => el.innerText.trim());
-    
-        // // if (friends.includes(authorName)) {
-        if (deleteBulletins && !isBulletin) {
-            console.log("Message is bulletin: delete without saving");
-        }
-            if (!isBulletin) {
-                console.log("Message is not a bulletin: proceed to save logic");
-                // console.log(authorName + " is a friend, save message.");
-            
-                //get time and message text
-                const msgTime = await page.$eval("time", el => el.getAttribute("dateTime"));
-                const paragraphs = await page.evaluate(() => {
-                    let paraElements = document.querySelectorAll(".bubble p");
-                    //array literal
-                    const paraList = [...paraElements];
-                    //gets the innerText of each element
-                    return paraList.map((el, index) => el.innerText);
-                });
+  const threads = [];
 
-                
-                //append message to messages.txt
-                console.log("Saving the message from " + authorName);
-                const stream = fs.createWriteStream("messages.txt", { flags: 'a' });
-                stream.write(authorName + "\n");
-                stream.write(msgTime + "\n");
-                paragraphs.forEach((item, index) => {
-                    stream.write(item + "\n");
-                });
-                stream.end();
-            }
-        //delete the message
-        await page.click(".circle-cross");
-        
-        console.log("deleting the message by " + authorName);
-        const elementHandle = await page.waitForSelector("iframe.fancybox-iframe");
-        const frame = await elementHandle.contentFrame();
-        const button = await frame.waitForSelector(".navigation-footer button");
-        await button.evaluate(el => el.click())
+  // collect all threads in the inbox
+  do {
+    const threadInformation = await messagesPage.collectThreadInformation();
+
+    threads.push(...threadInformation);
+
+    break;
+  } while (await messagesPage.nextPage());
+
+  // manually visit all threads, save messages in them and remove them
+  for (const { threadId, isBulletin, userName } of threads) {
+    if (!(isBulletin && skipBulletins)) {
+      const threadPage = await visitThreadPage(page, {
+        url: `${baseUrl}/dashboard/messages/${threadId}`,
+        threadId,
+      });
+
+      const messages = await threadPage.collectThreadMessages();
+
+      saveThreadMessages({ messages, userName });
     }
-    await browser.close()
+
+    await removeThread(page, { threadId, url: `${baseUrl}/dashboard/popups/delete-private-message-thread` });
+
+    break;
+  }
+
+  await browser.close();
 }
 
 main();
