@@ -75,7 +75,7 @@ async function main(email, pass) {
     url: `${baseUrl}/dashboard/login`,
   });
 
-  await loginPage.log(email, pass);
+  await loginPage.login(email, pass);
     
   const messagesPage = await visitMessagesPage(page, {
     url: `${baseUrl}/dashboard/messages`,
