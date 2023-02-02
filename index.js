@@ -1,17 +1,62 @@
 import puppeteer from "puppeteer";
 import dotenv from "dotenv";
+import express from "express";
 
 import { visitLoginPage, visitMessagesPage, visitThreadPage } from "./pages.js";
 import { saveThreadMessages, removeThread } from "./helpers.js";
 
 dotenv.config();
 
-async function main() {
+//set up express
+const app = express();
+app.use(express.json());
+app.listen(3000);
+app.set('view engine', 'ejs');
+
+//css *to be changed, this css sucks*
+app.use(express.static('public'));
+
+//this middleware gives access to form data
+app.use(express.urlencoded({ extended: true }));
+
+//routes
+app.get('/', (req, res) => {
+    res.render('index', {
+        title: 'Home'
+    });
+});
+
+app.get('/about', (req, res) => {
+    res.render('about', {
+        title: 'About'
+    });
+});
+
+//delete functions called here
+app.post('/delete', (req, res) => {
+    const creds = req.body;
+    const email = creds.email;
+    const pass = creds.password
+
+    main(email, pass);
+
+    res.render('index', {
+        title: 'Home'
+    })
+});
+
+//404
+app.use((req, res) => {
+    res.status(404).render('404', {
+        title: 'Page Not Found'
+    });
+});
+
+//main functionality is here
+async function main(email, pass) {
   // config
   const baseUrl = process.env.BASE_URL;
   const skipBulletins = process.env.DEV_DEL_BULLETINS === "true";
-  const email = process.env.DEV_EMAIL;
-  const pass = process.env.DEV_PASS;
 
   if (!baseUrl) {
     throw new Error('Please provide the Scribophile url in the "BASE_URL" env variable.');
@@ -30,8 +75,8 @@ async function main() {
     url: `${baseUrl}/dashboard/login`,
   });
 
-  await loginPage.login(process.env.DEV_EMAIL, process.env.DEV_PASS);
-
+  await loginPage.login(email, pass);
+    
   const messagesPage = await visitMessagesPage(page, {
     url: `${baseUrl}/dashboard/messages`,
   });
@@ -68,4 +113,3 @@ async function main() {
   await browser.close();
 }
 
-main();

@@ -1,0 +1,23 @@
+<%- include('./partials/head.ejs') %>
+
+<%- include('./partials/nav.ejs') %>
+
+        <div class="blogs content">
+            <h2>Home</h2>
+        </div>
+        <div>
+            <h3>Instructions</h3>
+            <p>It's pretty simple. You put your email and password into the form below and press 'Submit.' The program will login, using the email and password, and delete all your messages. Note that your email and password is never saved.</p>
+        </div>
+
+        <div class="create-blog content">
+            <form action="/delete" method="POST">
+               <label for="email">Blog email:</label>
+               <input type="text" id="email" name="email" required>
+               <label for="password">Blog password:</label>
+               <input type="password" id="password" name="password" required>
+               <button type="submit">Submit</button>
+            </form>
+       </div>
+    
+<%- include('./partials/footer.ejs') %>
