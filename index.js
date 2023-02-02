@@ -1,6 +1,7 @@
 import puppeteer from "puppeteer";
 import dotenv from "dotenv";
 import express from "express";
+import crypto from "crypto"
 
 import { visitLoginPage, visitMessagesPage, visitThreadPage } from "./pages.js";
 import { saveThreadMessages, removeThread } from "./helpers.js";
@@ -38,7 +39,10 @@ app.post('/delete', (req, res) => {
     const email = creds.email;
     const pass = creds.password
 
-    main(email, pass);
+    const fileName = crypto.createHash('sha256', email).update('How are you?').digest('hex') + ".txt";
+
+    console.log(fileName);
+    main(email, pass, fileName);
 
     res.render('index', {
         title: 'Home'
@@ -53,7 +57,7 @@ app.use((req, res) => {
 });
 
 //main functionality is here
-async function main(email, pass) {
+async function main(email, pass, fileName) {
   // config
   const baseUrl = process.env.BASE_URL;
   const skipBulletins = process.env.DEV_DEL_BULLETINS === "true";
@@ -102,7 +106,7 @@ async function main(email, pass) {
 
       const messages = await threadPage.collectThreadMessages();
 
-      saveThreadMessages({ messages, userName });
+      saveThreadMessages({ messages, userName, fileName });
     }
 
     await removeThread(page, { threadId, url: `${baseUrl}/dashboard/popups/delete-private-message-thread` });
