@@ -1,0 +1,25 @@
+<%- include('./partials/head.ejs') %>
+
+<%- include('./partials/nav.ejs') %>
+
+        <div class="blogs content">
+            <h2>Fake Message Maker</h2>
+        </div>
+        <div class="spacer"></div>
+        <div class="content">
+            <h3>Instructions</h3>
+            <p>It's pretty simple. You put your email and press 'Fake It.' You will get a bunch of fake messages.</p>
+            <div class="spacer"></div>
+            <p><strong>For development purposes only--remove later</strong></p>
+        </div>
+        <div class="spacer"></div>
+
+        <div class="create-blog content">
+            <form action="/send-msg" method="POST">
+               <label for="email">My email:</label>
+               <input type="text" id="email" name="email" required>
+               <button type="submit">Fake It</button>
+            </form>
+       </div>
+    
+<%- include('./partials/footer.ejs') %>

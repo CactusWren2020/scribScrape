@@ -13,6 +13,10 @@
       color: #222;
     }
 
+    .spacer {
+        height: 2rem;
+    }
+
     /* nav & footer styles */
     nav{
       display: flex;
