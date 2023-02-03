@@ -1,9 +1,9 @@
 import fs from "fs";
 
-export function saveThreadMessages({ messages, userName }) {
-  const stream = fs.createWriteStream("messages.txt", { flags: "a" });
+export function saveThreadMessages ({ messages, userName, fileName }) {
+  const stream = fs.createWriteStream(fileName, { flags: "a" });
 
-  stream.write(`--- Thread with ${userName} ---\n\n`);
+    stream.write(`--- Thread with ${userName} ---\n\n`);
 
   messages.forEach(({ userName, sentAt, message }) => {
     stream.write(userName + "\n");
