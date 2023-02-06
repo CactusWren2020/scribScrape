@@ -14,12 +14,25 @@
         </div>
         <div class="spacer"></div>
 
-        <div class="create-blog content">
+        <!-- <div class="create-blog content">
             <form action="/send-msg" method="POST">
                <label for="email">My email:</label>
                <input type="text" id="email" name="email" required>
                <button type="submit">Fake It</button>
             </form>
-       </div>
-    
+       </div> -->
+
+       
+            <div class="content create-blog">
+                <form action="/fake-msg" method="POST">
+                <label for="target-user">Send fakes to (user):</label>
+               <input type="text" id="targetUser" name="targetUser" required>
+               <label for="target-user">How many messages to send:</label>
+                <input type="number" name="numMessages" required>
+                <button id="createFake" type="submit">Create Fake Messages</button>
+            </form>
+            
+            </div>
+       
+       
 <%- include('./partials/footer.ejs') %>
