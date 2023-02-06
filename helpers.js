@@ -42,3 +42,11 @@ export function removeThread(/** @type {import('puppeteer').Page} */ page, { url
     { threadId, url }
   );
 }
+
+/**
+ * uses fake user to send private messages to specified user
+ * @param {array of objects} messages an array of objects representing messages
+ */
+export function sendFake(messages, user) {
+    console.log(user, messages);
+}

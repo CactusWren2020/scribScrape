@@ -3,9 +3,11 @@ import dotenv from "dotenv";
 import express from "express";
 import crypto from "crypto";
 import nodemailer from "nodemailer";
+import { LoremIpsum } from "lorem-ipsum";
+import randomDate from "random-datetime";
 
 import { visitLoginPage, visitMessagesPage, visitThreadPage } from "./pages.js";
-import { saveThreadMessages, removeThread } from "./helpers.js";
+import { saveThreadMessages, removeThread, sendFake } from "./helpers.js";
 
 dotenv.config();
 
@@ -49,13 +51,25 @@ app.post('/send-msg', (req, res) => {
     });
 });
 
+app.post('/fake-msg', (req, res) => {
+    const numMessages = req.body.numMessages;
+    const user = req.body.targetUser;
+    const fakeAttach = fakeMessages(numMessages);
+
+    sendFake(fakeAttach, user);
+
+    res.render('success', {
+        title: 'Success'
+    });
+})
+
 //delete functions called here
 app.post('/delete', (req, res) => {
     const creds = req.body;
     const email = creds.email;
     const pass = creds.password
 
-    const fileName = crypto.createHash('sha256', email).update('How are you?').digest('hex') + ".txt";
+    const fileName = crypto.createHash('md5').update(email).digest('hex') + ".txt";
 
     console.log(fileName);
     main(email, pass, fileName);
@@ -169,3 +183,42 @@ const sendMail = (targetEmail) => {
         }
     });
 }
+
+/**numMessages: {number} The number of fake messages you want 
+ * returns an array of objects, each a message
+*/
+const fakeMessages = (numMessages) => {
+    const lorem = new LoremIpsum({
+        sentencesPerParagraph: {
+            max: 8,
+            min: 2
+        },
+        wordsPerSentence: {
+            max: 16,
+            min: 4
+        }
+    });
+
+    const msgArray = [];
+    let numMsg = numMessages;
+
+    while (numMsg > 0) {
+        let lowerFirst = lorem.generateWords(1);
+        let firstName = lowerFirst.charAt(0).toUpperCase() + lowerFirst.slice(1);
+        let lowerLast = lorem.generateWords(1);
+        let lastName = lowerLast.charAt(0).toUpperCase() + lowerLast.slice(1);
+
+        let date = new Date(randomDate());
+        let dateFormat = date.getHours() + ":" + date.getMinutes() + ", " + date.toDateString();
+        
+        const msg = {
+            author: firstName + " " + lastName,
+            body: lorem.generateParagraphs(4),
+            time: dateFormat
+        }
+        numMsg = numMsg - 1;
+        msgArray.push(msg);
+    }
+    return msgArray;
+}
+
