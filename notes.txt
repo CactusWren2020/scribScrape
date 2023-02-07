@@ -1,0 +1,18 @@
+
+
+the element is in an iframe. so first you need to get the frame and then select the element from that frame. You would typically do:
+
+let iframeHandle = await page.$('#disneyid-iframe');
+let frame = await iframeHandle.contentFrame();
+let inputElement = await frame.waitForSelector('#did-ui-view > div > section > section > form > section > div:nth-child(1) > div > label > span.input-wrapper > input')
+await inputElement.type('hello', { delay: 100 });
+However, there is an issue with out-of-process frames, so you need to launch chromium with --disable-features=site-per-process. The following should work:
+
+const browser = await puppeteer.launch({headless: false, args: ['--disable-features=site-per-process']});
+const page = await browser.newPage();
+await page.goto('https://fantasy.espn.com/basketball/team', {waitUntil: ['load', 'domcontentloaded','networkidle0']});
+await page.waitFor(5000);
+let iframeHandle = await page.$('#disneyid-iframe');
+let frame = await iframeHandle.contentFrame();
+let inputElement = await frame.waitForSelector('#did-ui-view > div > section > section > form > section > div:nth-child(1) > div > label > span.input-wrapper > input')
+await inputElement.type('hello', { delay: 100 });

@@ -56,8 +56,9 @@ app.post('/fake-msg', (req, res) => {
     const user = req.body.targetUser;
     const fakeAttach = fakeMessages(numMessages);
 
-    sendFake(fakeAttach, user);
+    // sendFake(fakeAttach, user);
 
+    fakePM(user, numMessages);
     res.render('success', {
         title: 'Success'
     });
@@ -90,6 +91,54 @@ app.use((req, res) => {
         title: 'Page Not Found'
     });
 });
+
+async function fakePM (targetUser, numMsg) {
+    const baseUrl = process.env.BASE_URL;
+    //fake user credentials
+    const email = process.env.DEV_FAKE_SCRIB_EMAIL;
+    const pass = process.env.DEV_FAKE_SCRIB_PASS;
+
+    console.log(targetUser, email, pass, numMsg)
+
+    //launch, login, and go to messages page
+    const browser = await puppeteer.launch({
+        headless: false,
+        args: ['--disable-features=site-per-process']
+    });
+    const page = await browser.newPage();
+    const loginPage = await visitLoginPage(page, {
+        url: `${baseUrl}/dashboard/login`,
+    });
+    await loginPage.login(email, pass);
+    const messagesPage = await visitMessagesPage(page, {
+        url: `${baseUrl}/dashboard/messages`,
+    });
+
+    //send fake message
+
+    //click 'send new message' button
+    await page.click('.button.mail');
+
+    //type user in 'To' input
+    const iframeHandle = await page.$('.fancybox-iframe');
+    const frame = await iframeHandle.contentFrame();
+    const inputElement = await frame.waitForSelector('.selectize-input input');
+    await inputElement.type(targetUser, { delay: 100 })
+
+    //click selected user
+    const targetDropdown = await frame.waitForSelector('.selectize-dropdown-content div');
+    await targetDropdown.click();
+
+    //write in 'Your message' textarea
+    const textarea = await frame.waitForSelector('textarea');
+    await textarea.type('this is a fake message');
+
+    //send message
+    const sendButton = await frame.waitForSelector('button');
+    await sendButton.click();
+
+
+}
 
 //main functionality is here
 async function main (email, pass, fileName) {
