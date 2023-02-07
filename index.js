@@ -131,7 +131,19 @@ async function fakePM (targetUser, numMsg) {
 
     //write in 'Your message' textarea
     const textarea = await frame.waitForSelector('textarea');
-    await textarea.type('this is a fake message');
+    const lorem = new LoremIpsum({
+        sentencesPerParagraph: {
+            max: 8,
+            min: 2
+        },
+        wordsPerSentence: {
+            max: 16,
+            min: 4
+        }
+    });
+    const fakeMsg = lorem.generateParagraphs(4);
+
+    await textarea.type(fakeMsg);
 
     //send message
     const sendButton = await frame.waitForSelector('button');
