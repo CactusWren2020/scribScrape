@@ -1,9 +1,6 @@
 import fs from "fs";
 import { LoremIpsum } from "lorem-ipsum";
 import randomDate from "random-datetime";
-import puppeteer from "puppeteer";
-import dotenv from "dotenv";
-import express from "express";
 
 export function saveThreadMessages ({ messages, userName, fileName }) {
   const stream = fs.createWriteStream(fileName, { flags: "a" });

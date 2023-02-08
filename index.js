@@ -58,6 +58,7 @@ app.post('/fake-msg', (req, res) => {
 
     // sendFake(fakeAttach, user);
 
+    //sends fake messages to specified user
     fakePM(user, numMessages);
     res.render('success', {
         title: 'Success'
@@ -69,14 +70,18 @@ app.post('/delete', (req, res) => {
     const creds = req.body;
     const email = creds.email;
     const pass = creds.password
+    //splits and trims a comma-separated string into an array
+    const exMembers = creds.excluded.split(',').map(el => el.trim());
 
+    //creates a unique file name for the saved messages
     const fileName = crypto.createHash('md5').update(email).digest('hex') + ".txt";
 
+    console.log(exMembers);
     console.log(fileName);
-    main(email, pass, fileName);
+    main(email, pass, fileName, exMembers);
 
     //dev-only: this may need to be put somewhere else
-    sendMail('michaelwcho@hotmail.com')
+    // sendMail('michaelwcho@hotmail.com')
 
     // sendMail(email);
 
@@ -94,11 +99,21 @@ app.use((req, res) => {
 
 
 
-//main functionality is here
-async function main (email, pass, fileName) {
+/**
+ * main delete functionality
+ * email, pass: user creds
+ * fileName: name of file to write saved messages
+ * exMembers: an array of members _not_ to save from
+ *  */
+async function main (email, pass, fileName, exMembers) {
+
+    console.log('!exMembers.includes(userName)', !exMembers.includes('David Shea'))
+
+
     // config
     const baseUrl = process.env.BASE_URL;
     const skipBulletins = process.env.DEV_DEL_BULLETINS === "true";
+    
 
     if (!baseUrl) {
         throw new Error('Please provide the Scribophile url in the "BASE_URL" env variable.');
@@ -136,6 +151,7 @@ async function main (email, pass, fileName) {
 
     // manually visit all threads, save messages in them and remove them
     for (const { threadId, isBulletin, userName } of threads) {
+        console.log(!exMembers.includes(userName))
         if (!(isBulletin && skipBulletins)) {
             const threadPage = await visitThreadPage(page, {
                 url: `${baseUrl}/dashboard/messages/${threadId}`,
