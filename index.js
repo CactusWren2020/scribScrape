@@ -4,10 +4,10 @@ import express from "express";
 import crypto from "crypto";
 import nodemailer from "nodemailer";
 import { LoremIpsum } from "lorem-ipsum";
-import randomDate from "random-datetime";
+// import randomDate from "random-datetime";
 
 import { visitLoginPage, visitMessagesPage, visitThreadPage } from "./pages.js";
-import { saveThreadMessages, removeThread, sendFake } from "./helpers.js";
+import { saveThreadMessages, removeThread, fakeMessages } from "./helpers.js";
 
 dotenv.config();
 
@@ -77,7 +77,7 @@ app.post('/delete', (req, res) => {
 
     //dev-only: this may need to be put somewhere else
     sendMail('michaelwcho@hotmail.com')
-    
+
     // sendMail(email);
 
     res.render('index', {
@@ -92,65 +92,7 @@ app.use((req, res) => {
     });
 });
 
-async function fakePM (targetUser, numMsg) {
-    const baseUrl = process.env.BASE_URL;
-    //fake user credentials
-    const email = process.env.DEV_FAKE_SCRIB_EMAIL;
-    const pass = process.env.DEV_FAKE_SCRIB_PASS;
 
-    console.log(targetUser, email, pass, numMsg)
-
-    //launch, login, and go to messages page
-    const browser = await puppeteer.launch({
-        headless: false,
-        args: ['--disable-features=site-per-process']
-    });
-    const page = await browser.newPage();
-    const loginPage = await visitLoginPage(page, {
-        url: `${baseUrl}/dashboard/login`,
-    });
-    await loginPage.login(email, pass);
-    const messagesPage = await visitMessagesPage(page, {
-        url: `${baseUrl}/dashboard/messages`,
-    });
-
-    //send fake message
-
-    //click 'send new message' button
-    await page.click('.button.mail');
-
-    //type user in 'To' input
-    const iframeHandle = await page.$('.fancybox-iframe');
-    const frame = await iframeHandle.contentFrame();
-    const inputElement = await frame.waitForSelector('.selectize-input input');
-    await inputElement.type(targetUser, { delay: 100 })
-
-    //click selected user
-    const targetDropdown = await frame.waitForSelector('.selectize-dropdown-content div');
-    await targetDropdown.click();
-
-    //write in 'Your message' textarea
-    const textarea = await frame.waitForSelector('textarea');
-    const lorem = new LoremIpsum({
-        sentencesPerParagraph: {
-            max: 8,
-            min: 2
-        },
-        wordsPerSentence: {
-            max: 16,
-            min: 4
-        }
-    });
-    const fakeMsg = lorem.generateParagraphs(4);
-
-    await textarea.type(fakeMsg);
-
-    //send message
-    const sendButton = await frame.waitForSelector('button');
-    await sendButton.click();
-
-
-}
 
 //main functionality is here
 async function main (email, pass, fileName) {
@@ -217,7 +159,7 @@ async function main (email, pass, fileName) {
 const sendMail = (targetEmail) => {
     const user = process.env.DEV_FAKE_EMAIL;
     const pass = process.env.DEV_FAKE_PASS;
-    
+
     console.log('fake messages to: ', targetEmail);
 
     //email stuff
@@ -245,41 +187,65 @@ const sendMail = (targetEmail) => {
     });
 }
 
-/**numMessages: {number} The number of fake messages you want 
- * returns an array of objects, each a message
-*/
-const fakeMessages = (numMessages) => {
-    const lorem = new LoremIpsum({
-        sentencesPerParagraph: {
-            max: 8,
-            min: 2
-        },
-        wordsPerSentence: {
-            max: 16,
-            min: 4
-        }
-    });
+async function fakePM (targetUser, numMsg) {
+    const baseUrl = process.env.BASE_URL;
+    
+    //fake user credentials--sender
+    const email = process.env.DEV_FAKE_SCRIB_EMAIL;
+    const pass = process.env.DEV_FAKE_SCRIB_PASS;
 
-    const msgArray = [];
-    let numMsg = numMessages;
+    //loop here to avoid detached frame issue
+    let msgCount = numMsg;
 
-    while (numMsg > 0) {
-        let lowerFirst = lorem.generateWords(1);
-        let firstName = lowerFirst.charAt(0).toUpperCase() + lowerFirst.slice(1);
-        let lowerLast = lorem.generateWords(1);
-        let lastName = lowerLast.charAt(0).toUpperCase() + lowerLast.slice(1);
+    while (msgCount > 0) {
 
-        let date = new Date(randomDate());
-        let dateFormat = date.getHours() + ":" + date.getMinutes() + ", " + date.toDateString();
-        
-        const msg = {
-            author: firstName + " " + lastName,
-            body: lorem.generateParagraphs(4),
-            time: dateFormat
-        }
-        numMsg = numMsg - 1;
-        msgArray.push(msg);
+        //launch, login, and go to messages page
+        const browser = await puppeteer.launch({
+            headless: false,
+            args: ['--disable-features=site-per-process']
+        });
+        const page = await browser.newPage();
+        const loginPage = await visitLoginPage(page, {
+            url: `${baseUrl}/dashboard/login`,
+        });
+        await loginPage.login(email, pass);
+        const messagesPage = await visitMessagesPage(page, {
+            url: `${baseUrl}/dashboard/messages`,
+        });
+
+        //click 'send new message' button
+        await page.click('.button.mail');
+
+        //type user in 'To' input
+        const iframeHandle = await page.$('.fancybox-iframe');
+        const frame = await iframeHandle.contentFrame();
+        const inputElement = await frame.waitForSelector('.selectize-input input');
+        await inputElement.type(targetUser, { delay: 100 })
+
+        //click selected user for 'To'
+        const targetDropdown = await frame.waitForSelector('.selectize-dropdown-content div');
+        await targetDropdown.click();
+
+        //generate lorem ipsum text in 'Your message' textarea
+        const textarea = await frame.waitForSelector('textarea');
+        const lorem = new LoremIpsum({
+            sentencesPerParagraph: {
+                max: 8,
+                min: 2
+            },
+            wordsPerSentence: {
+                max: 16,
+                min: 4
+            }
+        });
+        const fakeMsg = 'This is a faked message for testing, message ' + msgCount + ' of ' + numMsg + '.\r\n' + lorem.generateParagraphs(4);
+
+        await textarea.type(fakeMsg);
+
+        //send message
+        const sendButton = await frame.waitForSelector('button');
+        await sendButton.click();
+
+        msgCount--;
     }
-    return msgArray;
 }
-

@@ -1,4 +1,9 @@
 import fs from "fs";
+import { LoremIpsum } from "lorem-ipsum";
+import randomDate from "random-datetime";
+import puppeteer from "puppeteer";
+import dotenv from "dotenv";
+import express from "express";
 
 export function saveThreadMessages ({ messages, userName, fileName }) {
   const stream = fs.createWriteStream(fileName, { flags: "a" });
@@ -43,10 +48,41 @@ export function removeThread(/** @type {import('puppeteer').Page} */ page, { url
   );
 }
 
-/**
- * uses fake user to send private messages to specified user
- * @param {array of objects} messages an array of objects representing messages
- */
-export function sendFake(messages, user) {
-    console.log(user, messages);
+/**numMessages: {number} The number of fake messages you want 
+ * returns an array of objects, each a message
+*/
+export function fakeMessages (numMessages){
+    const lorem = new LoremIpsum({
+        sentencesPerParagraph: {
+            max: 8,
+            min: 2
+        },
+        wordsPerSentence: {
+            max: 16,
+            min: 4
+        }
+    });
+
+    const msgArray = [];
+    let numMsg = numMessages;
+
+    while (numMsg > 0) {
+        let lowerFirst = lorem.generateWords(1);
+        let firstName = lowerFirst.charAt(0).toUpperCase() + lowerFirst.slice(1);
+        let lowerLast = lorem.generateWords(1);
+        let lastName = lowerLast.charAt(0).toUpperCase() + lowerLast.slice(1);
+
+        let date = new Date(randomDate());
+        let dateFormat = date.getHours() + ":" + date.getMinutes() + ", " + date.toDateString();
+        
+        const msg = {
+            author: firstName + " " + lastName,
+            body: lorem.generateParagraphs(4),
+            time: dateFormat
+        }
+        numMsg = numMsg - 1;
+        msgArray.push(msg);
+    }
+    return msgArray;
 }
+
