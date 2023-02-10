@@ -12,6 +12,7 @@
         </div>
         <div class="spacer"></div>
 
+
         <div class="create-blog content">
             <form action="/delete" method="POST">
                <label for="email">Blog email:</label>
@@ -20,6 +21,15 @@
                <input type="password" id="password" name="password" required>
                <label for="email">Excluded Members (don't save their messages, seperate by comma)</label>
                <input type="text" id="excluded" name="excluded" required>
+
+                <% if(typeof errors != 'undefined') { %>
+                    <% errors.forEach(function(error) { %>
+                        <div class="error" role="error">
+                            <%= error.message %>
+                        </div>
+                    <% }) %>
+                <% } %>
+
                <button type="submit">Submit</button>
             </form>
        </div>
